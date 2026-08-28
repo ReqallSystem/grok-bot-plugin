@@ -126,8 +126,8 @@ describe('reqall grok-bot plugin package', () => {
     assert.doesNotMatch(manifest.description, /Grok Build/)
     const vars = manifest.variables
     assert.equal(vars.type, 'object')
-    assert.ok(vars.required.includes('REQALL_API_KEY'))
     assert.ok(vars.properties.REQALL_API_KEY)
+    assert.ok(!(vars.required || []).includes('REQALL_API_KEY'))
     assert.equal(vars.properties.REQALL_URL.default, 'https://www.reqall.net')
   })
 
@@ -138,8 +138,11 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(agents, /Never persist secrets/)
     assert.match(agents, /no SessionStart \/ Stop \/ PreToolUse hook runtime/)
     assert.match(agents, /Prefer native MCP OAuth/)
+    assert.match(agents, /2026-08-28/)
+    assert.match(agents, /fallback/)
     assert.match(agents, /reqall login/)
     assert.doesNotMatch(agents, /Do not try Cursor OAuth/)
+    assert.doesNotMatch(agents, /not yet on Reqall|Until Reqall registers|invalid redirect_uri/)
     for (const skill of REQUIRED_SKILLS) {
       assert.ok(agents.includes(skill), `AGENTS.md should name ${skill}`)
     }
@@ -153,13 +156,17 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(readme, /REQALL_URL/)
     assert.match(readme, /REQALL_PROJECT_NAME/)
     assert.match(readme, /https:\/\/www\.reqall\.net\/mcp/)
-    assert.match(readme, /invalid redirect_uri cursor:\/\/anysphere\.cursor-mcp\/oauth\/callback/)
+    assert.match(readme, /Native MCP OAuth is the preferred path/)
+    assert.match(readme, /2026-08-28/)
+    assert.match(readme, /cursor:\/\/anysphere\.cursor-mcp\/oauth\/callback/)
     assert.match(readme, /http:\/\/localhost:8787\/callback/)
     assert.match(readme, /https:\/\/www\.cursor\.com\/agents\/mcp\/oauth\/callback/)
-    assert.match(readme, /Prefer native MCP OAuth/)
+    assert.match(readme, /reference for other hosts/)
+    assert.match(readme, /fallback/)
     assert.match(readme, /reqall login/)
-    assert.match(readme, /allowlist/)
     assert.match(readme, /npm test/)
+    assert.doesNotMatch(readme, /invalid redirect_uri/)
+    assert.doesNotMatch(readme, /not yet on Reqall|Until those URIs|Until Reqall registers|currently fails/)
     for (const skill of REQUIRED_SKILLS) {
       assert.ok(readme.includes(skill), `README should document ${skill}`)
     }
@@ -167,8 +174,8 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(readme, /do not[\s\S]*~\/\.grok\/config\.toml/i)
   })
 
-  it('does not claim Reqall OAuth is broken or unsupported', () => {
-    const forbidden = /OAuth is broken|OAuth-only setup is unsupported|Cursor OAuth against \/mcp is not supported|Do not use OAuth-only setup|Grok Bot has no OAuth/i
+  it('treats native MCP OAuth as working, with API key as fallback', () => {
+    const forbidden = /OAuth is broken|OAuth-only setup is unsupported|Cursor OAuth against \/mcp is not supported|Do not use OAuth-only setup|Grok Bot has no OAuth|current Grok Bot workaround|not yet on Reqall|Until those URIs are registered|Until Reqall registers/i
     const sources = [
       'README.md',
       'AGENTS.md',
@@ -176,13 +183,14 @@ describe('reqall grok-bot plugin package', () => {
       'package.json'
     ]
     for (const rel of sources) {
-      assert.doesNotMatch(read(rel), forbidden, `${rel} still has inaccurate OAuth wording`)
+      assert.doesNotMatch(read(rel), forbidden, `${rel} still has stale OAuth wording`)
     }
     const readme = read('README.md')
-    assert.match(readme, /Reqall OAuth\s+itself is fine/)
+    assert.match(readme, /Native MCP OAuth is the preferred path and works/)
     const keyDesc = JSON.parse(read('.cursor-plugin/plugin.json')).variables.properties.REQALL_API_KEY.description
-    assert.match(keyDesc, /workaround/)
-    assert.doesNotMatch(keyDesc, /not supported/)
+    assert.match(keyDesc, /fallback/)
+    assert.match(keyDesc, /Prefer native MCP OAuth/)
+    assert.doesNotMatch(keyDesc, /workaround|not supported/)
   })
 
   it('is skills + MCP + docs, not a hook runtime or Grok Build package', () => {

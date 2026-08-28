@@ -26,48 +26,47 @@ hook runtime, so this plugin is skills + MCP + docs.
 
 ### Authentication
 
-Prefer native MCP OAuth when the host’s redirect URI is registered on the
-Reqall OAuth client. Reqall OAuth works with local tools today.
+Native MCP OAuth is the preferred path and works from Grok Bot. The three
+Cursor callbacks below were registered on the Reqall MCP OAuth client as
+of 2026-08-28 (verified: native HTTP connector `user-Reqall` connected
+with 18 tools). Add `https://www.reqall.net/mcp` from **Plugins** or
+**Customize → MCPs** and finish the Authorize card.
 
-Grok Bot / Cursor MCP OAuth currently fails on connect because Cursor
-starts the flow and sends a redirect URI that is **not yet on Reqall’s
-OAuth client allowlist** — the same provider-side gap Linear, Vercel, and
-Slack had until they registered Cursor’s callback. Observed:
+API key Bearer or a token from `reqall login` remains a **fallback**,
+not the primary setup.
 
-```text
-invalid redirect_uri cursor://anysphere.cursor-mcp/oauth/callback
-```
+### Cursor redirect URIs (reference for other hosts)
 
-Cursor-documented MCP redirect URIs (register all three on the Reqall
-OAuth client):
+These Cursor callbacks are already registered on the hosted Reqall
+OAuth client. Other hosts need their own redirect URIs allowlisted the
+same way:
 
 | Surface | Redirect URI |
 |---------|--------------|
-| Desktop (custom protocol, what we observed) | `cursor://anysphere.cursor-mcp/oauth/callback` |
+| Desktop (custom protocol) | `cursor://anysphere.cursor-mcp/oauth/callback` |
 | Desktop | `http://localhost:8787/callback` |
 | Web / Cursor Agents | `https://www.cursor.com/agents/mcp/oauth/callback` |
 
-Until those URIs are registered, use API key Bearer (or a token from
-`reqall login` on a local CLI) as the Grok Bot workaround. Reqall OAuth
-itself is fine; the Cursor callback is not on the client allowlist yet.
+### 1. Preferred: native MCP OAuth
 
-### 1. Workaround: API key or `reqall login` token
+1. In Grok Bot, open **Plugins** (or **Customize → MCPs**).
+2. Add the hosted server `https://www.reqall.net/mcp`.
+3. Complete **Authorize** / **Authenticate** in the browser.
+4. Confirm the connector appears under Installed (Grok Bot shows it as
+   `user-Reqall` when connected).
 
-Create a key at [reqall.net](https://www.reqall.net), or reuse a token
-from `reqall login` on a local CLI. Store it in Grok Bot’s **secure
-secret card** or your shell environment as `REQALL_API_KEY`. Never paste
-the key into chat or commit it to a repo.
+### 2. Fallback: API key or `reqall login` token
 
-### 2. Connect the hosted MCP server
+If OAuth is unavailable on a given host, create a key at
+[reqall.net](https://www.reqall.net) or reuse a token from `reqall login`
+on a local CLI. Store it in Grok Bot’s **secure secret card** or your
+shell environment as `REQALL_API_KEY`. Never paste the key into chat or
+commit it to a repo.
 
-Endpoint: `https://www.reqall.net/mcp`
+Then send `Authorization: Bearer <REQALL_API_KEY>` on the hosted MCP
+endpoint.
 
-Once Cursor’s redirect URIs are on the Reqall allowlist, use the native
-MCP connect / OAuth card. Until then, send:
-
-`Authorization: Bearer <REQALL_API_KEY>`
-
-**Project or user `mcp.json` (current Grok Bot workaround)**
+**Project or user `mcp.json` (fallback)**
 
 Copy [examples/cursor-mcp.json](examples/cursor-mcp.json) to
 `.cursor/mcp.json` (this project) or `~/.cursor/mcp.json` (all projects):
@@ -95,8 +94,9 @@ git clone https://github.com/ReqallSystem/grok-bot-plugin.git
 ln -sfn "$PWD/grok-bot-plugin" ~/.cursor/plugins/local/reqall
 ```
 
-Reload the window. In **Customize → Plugins**, configure `REQALL_API_KEY`
-(Plugins → Configure). The bundled `mcp.json` sends
+Reload the window. Prefer the native OAuth connect card. If you are
+using the API-key fallback, configure `REQALL_API_KEY` under
+**Customize → Plugins → Configure**. The bundled `mcp.json` then sends
 `Authorization: Bearer ${REQALL_API_KEY}` to `https://www.reqall.net/mcp`.
 That `${REQALL_API_KEY}` is a plugin variable placeholder, not a secret
 checked into git.
@@ -130,7 +130,7 @@ Invoke skills with `/reqall-context`, `/reqall-persist`, and so on.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REQALL_API_KEY` | workaround | Bearer token for MCP until Cursor redirect URIs are registered |
+| `REQALL_API_KEY` | optional | Fallback Bearer token when not using native MCP OAuth |
 | `REQALL_URL` | `https://www.reqall.net` | Reqall API base (self-host only) |
 | `REQALL_PROJECT_NAME` | auto | Override project id (`org/repo`) |
 
