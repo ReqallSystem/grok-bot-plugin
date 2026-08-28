@@ -1,0 +1,35 @@
+{
+  "name": "@reqall/grok-bot-plugin",
+  "version": "2026.8.28",
+  "description": "Reqall plugin for Grok Bot — portable skills, MCP connector, and memory autopilot",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    ".cursor-plugin",
+    "mcp.json",
+    "skills",
+    "examples",
+    "AGENTS.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "reqall",
+    "grok-bot",
+    "cursor",
+    "mcp",
+    "memory",
+    "ai-agent"
+  ],
+  "homepage": "https://github.com/ReqallSystem/grok-bot-plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReqallSystem/grok-bot-plugin.git"
+  },
+  "scripts": {
+    "test": "node --test test/plugin.test.js"
+  },
+  "license": "MIT"
+}

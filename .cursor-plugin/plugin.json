@@ -1,0 +1,34 @@
+{
+  "name": "reqall",
+  "version": "2026.8.28",
+  "description": "Persistent semantic memory for Grok Bot — skills and hosted Reqall MCP",
+  "author": {
+    "name": "ReqallSystem"
+  },
+  "homepage": "https://github.com/ReqallSystem/grok-bot-plugin",
+  "repository": "https://github.com/ReqallSystem/grok-bot-plugin",
+  "license": "MIT",
+  "keywords": [
+    "reqall",
+    "memory",
+    "mcp",
+    "grok-bot",
+    "cursor"
+  ],
+  "variables": {
+    "type": "object",
+    "properties": {
+      "REQALL_API_KEY": {
+        "type": "string",
+        "title": "Reqall API key",
+        "description": "Optional fallback Bearer token from your Reqall account or `reqall login`. Prefer native MCP OAuth; set this only when OAuth is unavailable on the host."
+      },
+      "REQALL_URL": {
+        "type": "string",
+        "title": "Reqall server URL",
+        "description": "API base URL. Change only if you self-host.",
+        "default": "https://www.reqall.net"
+      }
+    }
+  }
+}
