@@ -137,6 +137,9 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(agents, /Persist completed work before ending the turn/)
     assert.match(agents, /Never persist secrets/)
     assert.match(agents, /no SessionStart \/ Stop \/ PreToolUse hook runtime/)
+    assert.match(agents, /Prefer native MCP OAuth/)
+    assert.match(agents, /reqall login/)
+    assert.doesNotMatch(agents, /Do not try Cursor OAuth/)
     for (const skill of REQUIRED_SKILLS) {
       assert.ok(agents.includes(skill), `AGENTS.md should name ${skill}`)
     }
@@ -151,12 +154,35 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(readme, /REQALL_PROJECT_NAME/)
     assert.match(readme, /https:\/\/www\.reqall\.net\/mcp/)
     assert.match(readme, /invalid redirect_uri cursor:\/\/anysphere\.cursor-mcp\/oauth\/callback/)
+    assert.match(readme, /http:\/\/localhost:8787\/callback/)
+    assert.match(readme, /https:\/\/www\.cursor\.com\/agents\/mcp\/oauth\/callback/)
+    assert.match(readme, /Prefer native MCP OAuth/)
+    assert.match(readme, /reqall login/)
+    assert.match(readme, /allowlist/)
     assert.match(readme, /npm test/)
     for (const skill of REQUIRED_SKILLS) {
       assert.ok(readme.includes(skill), `README should document ${skill}`)
     }
     assert.match(readme, /Do not run `grok plugin marketplace add`/)
     assert.match(readme, /do not[\s\S]*~\/\.grok\/config\.toml/i)
+  })
+
+  it('does not claim Reqall OAuth is broken or unsupported', () => {
+    const forbidden = /OAuth is broken|OAuth-only setup is unsupported|Cursor OAuth against \/mcp is not supported|Do not use OAuth-only setup|Grok Bot has no OAuth/i
+    const sources = [
+      'README.md',
+      'AGENTS.md',
+      '.cursor-plugin/plugin.json',
+      'package.json'
+    ]
+    for (const rel of sources) {
+      assert.doesNotMatch(read(rel), forbidden, `${rel} still has inaccurate OAuth wording`)
+    }
+    const readme = read('README.md')
+    assert.match(readme, /Reqall OAuth\s+itself is fine/)
+    const keyDesc = JSON.parse(read('.cursor-plugin/plugin.json')).variables.properties.REQALL_API_KEY.description
+    assert.match(keyDesc, /workaround/)
+    assert.doesNotMatch(keyDesc, /not supported/)
   })
 
   it('is skills + MCP + docs, not a hook runtime or Grok Build package', () => {

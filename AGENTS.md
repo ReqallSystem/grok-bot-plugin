@@ -29,8 +29,15 @@ Use the Reqall MCP tools from the connected `reqall` server
 - `delete_link` (only if the user explicitly asks)
 - `share_project` / `revoke_share` / `delete_project` (only if the user explicitly asks)
 
-Auth is API key Bearer (`REQALL_API_KEY`). Do not try Cursor OAuth against
-this endpoint. Never write the API key into a record, chat log, or repo file.
+Prefer native MCP OAuth when the host’s redirect URI is registered on the
+Reqall OAuth client. Today Grok Bot / Cursor sends
+`cursor://anysphere.cursor-mcp/oauth/callback` (also documented:
+`http://localhost:8787/callback` and
+`https://www.cursor.com/agents/mcp/oauth/callback`), and that URI is not
+yet on Reqall’s allowlist, so the connect card fails with
+`invalid redirect_uri`. Until Reqall registers those Cursor URIs, use API
+key Bearer (`REQALL_API_KEY`) or a token from `reqall login`. Never write
+the token into a record, chat log, or repo file.
 
 ## Skills
 

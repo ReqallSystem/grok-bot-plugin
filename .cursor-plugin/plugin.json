@@ -21,7 +21,7 @@
       "REQALL_API_KEY": {
         "type": "string",
         "title": "Reqall API key",
-        "description": "Bearer token from your Reqall account at https://www.reqall.net. Required. Cursor OAuth against /mcp is not supported."
+        "description": "Bearer token from your Reqall account or `reqall login`. Current Grok Bot workaround until Cursor redirect URIs are registered on the Reqall OAuth client."
       },
       "REQALL_URL": {
         "type": "string",

@@ -24,27 +24,50 @@ hook runtime, so this plugin is skills + MCP + docs.
 
 ## Install
 
-### 1. Get a Reqall API key
+### Authentication
 
-Create a key at [reqall.net](https://www.reqall.net). Store it in Grok Bot’s
-**secure secret card** or your shell environment as `REQALL_API_KEY`. Never
-paste the key into chat or commit it to a repo.
+Prefer native MCP OAuth when the host’s redirect URI is registered on the
+Reqall OAuth client. Reqall OAuth works with local tools today.
 
-### 2. Connect the hosted MCP server (API key, not OAuth)
-
-Endpoint: `https://www.reqall.net/mcp`
-
-Auth: `Authorization: Bearer <REQALL_API_KEY>`
-
-Cursor OAuth against this endpoint fails with:
+Grok Bot / Cursor MCP OAuth currently fails on connect because Cursor
+starts the flow and sends a redirect URI that is **not yet on Reqall’s
+OAuth client allowlist** — the same provider-side gap Linear, Vercel, and
+Slack had until they registered Cursor’s callback. Observed:
 
 ```text
 invalid redirect_uri cursor://anysphere.cursor-mcp/oauth/callback
 ```
 
-Do not use OAuth-only setup. Add the server with connector headers.
+Cursor-documented MCP redirect URIs (register all three on the Reqall
+OAuth client):
 
-**Project or user `mcp.json` (recommended)**
+| Surface | Redirect URI |
+|---------|--------------|
+| Desktop (custom protocol, what we observed) | `cursor://anysphere.cursor-mcp/oauth/callback` |
+| Desktop | `http://localhost:8787/callback` |
+| Web / Cursor Agents | `https://www.cursor.com/agents/mcp/oauth/callback` |
+
+Until those URIs are registered, use API key Bearer (or a token from
+`reqall login` on a local CLI) as the Grok Bot workaround. Reqall OAuth
+itself is fine; the Cursor callback is not on the client allowlist yet.
+
+### 1. Workaround: API key or `reqall login` token
+
+Create a key at [reqall.net](https://www.reqall.net), or reuse a token
+from `reqall login` on a local CLI. Store it in Grok Bot’s **secure
+secret card** or your shell environment as `REQALL_API_KEY`. Never paste
+the key into chat or commit it to a repo.
+
+### 2. Connect the hosted MCP server
+
+Endpoint: `https://www.reqall.net/mcp`
+
+Once Cursor’s redirect URIs are on the Reqall allowlist, use the native
+MCP connect / OAuth card. Until then, send:
+
+`Authorization: Bearer <REQALL_API_KEY>`
+
+**Project or user `mcp.json` (current Grok Bot workaround)**
 
 Copy [examples/cursor-mcp.json](examples/cursor-mcp.json) to
 `.cursor/mcp.json` (this project) or `~/.cursor/mcp.json` (all projects):
@@ -107,7 +130,7 @@ Invoke skills with `/reqall-context`, `/reqall-persist`, and so on.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REQALL_API_KEY` | required | Bearer token for MCP |
+| `REQALL_API_KEY` | workaround | Bearer token for MCP until Cursor redirect URIs are registered |
 | `REQALL_URL` | `https://www.reqall.net` | Reqall API base (self-host only) |
 | `REQALL_PROJECT_NAME` | auto | Override project id (`org/repo`) |
 
