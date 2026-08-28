@@ -106,8 +106,11 @@ Run `reqall-persist` before the final user-facing answer. There is no Stop
 hook to block the turn, so you must persist yourself:
 
 1. Enumerate distinct work items completed in the turn.
-2. For each meaningful item, call `upsert_record` with appropriate `kind`,
-   `status`, `title`, and `body`.
+2. For each meaningful item, call `search` first. If a matching record
+   exists (especially an open issue, spec, or todo), call `upsert_record`
+   with its `record_id` so you update it instead of creating a duplicate.
+   Otherwise create a new record with appropriate `kind`, `status`,
+   `title`, and `body`.
 3. Link related records with `upsert_link` when relationships are clear.
 4. If verification was run, persist test/build evidence as `kind: "test"`.
 5. Persist unresolved follow-ups as open records.

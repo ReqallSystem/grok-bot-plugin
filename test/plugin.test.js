@@ -15,7 +15,7 @@ const REQUIRED_SKILLS = [
   'reqall-sleep'
 ]
 
-const CONTEXT_OPS = ['upsert_project', 'search', 'list_records', 'get_record', 'impact']
+const CONTEXT_OPS = ['upsert_project', 'search', 'list_records', 'get_record', 'list_links', 'impact']
 const PERSIST_OPS = ['upsert_project', 'search', 'list_records', 'upsert_record', 'upsert_link']
 const DOCUMENT_OPS = ['upsert_project', 'search', 'upsert_record', 'upsert_link']
 const TRIAGE_OPS = ['upsert_project', 'search', 'list_records', 'upsert_record', 'upsert_link']
@@ -99,12 +99,20 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(persist, /Never persist\s+secrets/)
     assert.match(persist, /kind/)
     assert.match(persist, /status/)
+    assert.match(persist, /record_id/)
+    assert.match(persist, /Search, then upsert/)
+    assert.match(persist, /instead of creating a second/)
+
+    const context = read('skills/reqall-context/SKILL.md')
+    const linksIdx = context.indexOf('list_links')
+    const impactIdx = context.indexOf('call `impact`')
+    assert.ok(linksIdx !== -1 && impactIdx !== -1 && linksIdx < impactIdx)
   })
 
-  it('mcp.json targets the hosted endpoint with a Bearer placeholder', () => {
+  it('mcp.json interpolates REQALL_URL and a Bearer placeholder', () => {
     const mcp = JSON.parse(read('mcp.json'))
     const server = mcp.mcpServers.reqall
-    assert.equal(server.url, 'https://www.reqall.net/mcp')
+    assert.equal(server.url, '${REQALL_URL}/mcp')
     assert.equal(server.headers.Authorization, 'Bearer ${REQALL_API_KEY}')
     const dumped = JSON.stringify(mcp)
     assert.doesNotMatch(dumped, /sk-[A-Za-z0-9]{20,}/)
@@ -141,6 +149,9 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(agents, /2026-08-28/)
     assert.match(agents, /fallback/)
     assert.match(agents, /reqall login/)
+    assert.match(agents, /call `list_links` and `impact`/)
+    assert.match(agents, /call `search` first/)
+    assert.match(agents, /record_id/)
     assert.doesNotMatch(agents, /Do not try Cursor OAuth/)
     assert.doesNotMatch(agents, /not yet on Reqall|Until Reqall registers|invalid redirect_uri/)
     for (const skill of REQUIRED_SKILLS) {

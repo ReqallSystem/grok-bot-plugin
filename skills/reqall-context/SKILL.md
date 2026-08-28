@@ -10,7 +10,7 @@ Load project context from Reqall before starting work.
 Grok Bot has no SessionStart or PreToolUse hooks. Run this skill yourself
 before implementation. Use the Reqall MCP tools from the connected `reqall`
 server. Hosts may prefix names; the operations are `upsert_project`,
-`search`, `list_records`, `get_record`, and `impact`.
+`search`, `list_records`, `get_record`, `list_links`, and `impact`.
 
 ## Steps
 
@@ -30,13 +30,15 @@ server. Hosts may prefix names; the operations are `upsert_project`,
    `list_records` with `status: "open"` to surface active issues, specs,
    and todos.
 
-5. **Check impact (if relevant)** — If the task changes an existing
-   tracked record or component, call `impact`. Skip for new work or
-   simple questions.
+5. **List links, then impact (if relevant)** — If the task changes an
+   existing tracked record or component, call `list_links` on that
+   record first to surface directly related records, then call `impact`.
+   Skip both for new work or simple questions.
 
 6. **Present context** — Summarize findings concisely:
    - Relevant records from search
    - Open items for this project
+   - Directly linked records (if `list_links` ran)
    - Impact analysis results (if run)
 
    Call `get_record` for full details on records that look particularly

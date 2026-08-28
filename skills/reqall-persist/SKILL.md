@@ -61,9 +61,16 @@ SLEEP to `promote` or `discard` later.
    (issue/resolved), a new spec (spec/open), and a follow-up task
    (todo/open).
 
-3. **Create records** — For each non-trivial work item, call
-   `upsert_record` with:
+3. **Search, then upsert** — For each non-trivial work item, call
+   `search` first (conceptual query, not a raw path). If an existing
+   record already tracks this work — especially an open issue, spec, or
+   todo — call `upsert_record` with that `record_id` so you update it
+   (for example `open` → `resolved`) instead of creating a second
+   record. Only omit `record_id` when search finds no match.
+
+   Pass:
    - `project_id` from step 1
+   - `record_id` when updating an existing record
    - `kind` and `status` from the classification table
    - A short, descriptive `title` with the appropriate prefix
    - A `body` summarizing what was done, why, and any relevant context.
@@ -83,7 +90,8 @@ SLEEP to `promote` or `discard` later.
 
 6. **Verify** — Call `list_records` with the `project_id` to review the
    records just created or updated. Cross-check against the work items
-   identified in step 2. If anything was missed, create it now.
+   identified in step 2. If anything was missed, search then upsert
+   (update an existing match; do not duplicate).
 
 ## When to Skip
 

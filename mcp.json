@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "reqall": {
-      "url": "https://www.reqall.net/mcp",
+      "url": "${REQALL_URL}/mcp",
       "headers": {
         "Authorization": "Bearer ${REQALL_API_KEY}"
       }

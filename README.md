@@ -97,18 +97,19 @@ ln -sfn "$PWD/grok-bot-plugin" ~/.cursor/plugins/local/reqall
 Reload the window. Prefer the native OAuth connect card. If you are
 using the API-key fallback, configure `REQALL_API_KEY` under
 **Customize → Plugins → Configure**. The bundled `mcp.json` then sends
-`Authorization: Bearer ${REQALL_API_KEY}` to `https://www.reqall.net/mcp`.
-That `${REQALL_API_KEY}` is a plugin variable placeholder, not a secret
-checked into git.
+`Authorization: Bearer ${REQALL_API_KEY}` to `${REQALL_URL}/mcp`
+(hosted default `https://www.reqall.net`). Those `${…}` names are plugin
+variable placeholders, not secrets checked into git.
 
 On Teams / Enterprise, local plugin imports may be disabled by admin
 policy. Use the `mcp.json` connector path instead.
 
 **Self-host**
 
-If your Reqall instance is not `https://www.reqall.net`, point `url` at
-`${REQALL_URL}/mcp` and set `REQALL_URL` in the environment. Do not put
-the API key in the JSON file.
+Set the plugin variable `REQALL_URL` (or `REQALL_URL` in the
+environment for a project `mcp.json`). The bundled connector uses
+`${REQALL_URL}/mcp`; the hosted default is `https://www.reqall.net`.
+Do not put the API key in the JSON file.
 
 ### 3. Load skills and autopilot
 
