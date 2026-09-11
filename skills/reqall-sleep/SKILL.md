@@ -36,8 +36,10 @@ consolidate/split. Prefer `info` / `arch` / `todo` / `issue` when promoting.
 
 ## Steps
 
-1. **Project** — arg → `REQALL_PROJECT_NAME` → git `org/repo`. Do not invent
-   a name from `$HOME` / `ubuntu` / `src`. Call `upsert_project` → `project_id`.
+1. **Project** — arg → `REQALL_PROJECT_NAME` → git `org/repo` → a
+   labelled `org/repo` in the prompt → `.machine/<hostname>/<os-user>`.
+   Do not invent a name from `$HOME` / `ubuntu` / `src` / `workspace`
+   or a bare cwd basename. Call `upsert_project` → `project_id`.
 2. **Candidates** — `sleep_candidates` with `project_id`. If rate-limited,
    report next eligible time and stop.
 3. **Summary** — counts: consolidate, compact/skip, split, crosslink,
@@ -47,9 +49,14 @@ consolidate/split. Prefer `info` / `arch` / `todo` / `issue` when promoting.
    - **compact** — same id; leaner form.
    - **split** — focused sub-records; kind/status fit each topic (usually match original).
    - **crosslink** — only when useful for discovery.
-   - **promote** / **discard** — work logs only.
+   - **promote** / **discard** — work logs only. `promote` writes durable
+     records carrying the work log's decisions, outcomes, and
+     constraints; drop the narrative. `discard` when nothing durable
+     remains.
 5. **Apply** — one `sleep_apply` with the batch. No per-op confirmation.
-6. **Report** — consolidated / compacted / split / crosslinked / skipped /
+6. **Verify** — inspect every apply result for partial failures; do not
+   retry the whole destructive batch after an ambiguous response.
+7. **Report** — consolidated / compacted / split / crosslinked / skipped /
    promoted / discarded / errors. If candidates were capped: note to run again later.
 
 ## Rules

@@ -5,15 +5,19 @@ Persistent cloud memory for [Grok Bot](https://cursor.com/help/grok-bot/getting-
 Reqall is a knowledge graph of issues, specs, architecture, and related work,
 with semantic search, hosted at [reqall.net](https://www.reqall.net). This
 package gives Grok Bot the family memory loop — **context before work**,
-**persist before done** — as portable skills, a hosted MCP connector, and an
-`AGENTS.md` autopilot. It is **not** the [Grok Build](https://grok.com) plugin.
+**intend when scope is agreed**, **persist and verify before done** — as
+portable skills, a hosted MCP connector, and an `AGENTS.md` autopilot. It
+is **not** the [Grok Build](https://grok.com) plugin.
 
 Sibling of [claude-plugin](https://github.com/ReqallSystem/claude-plugin),
 [hermes-plugin](https://github.com/ReqallSystem/hermes-plugin), and
 [grok-plugin](https://github.com/ReqallSystem/grok-plugin). Those packages
 include harness hooks (`SessionStart` / `Stop` / `PreToolUse`, Hermes
 `pre_llm_call`, Grok Build `UserPromptSubmit`). Grok Bot has no equivalent
-hook runtime, so this plugin is skills + MCP + docs.
+hook runtime, so this plugin is skills + MCP + docs. The 2026.9.x ports
+that depend on those hooks — Bash mutation heuristics, Stop-hook timing,
+SessionEnd temp-file cleanup, Hermes SQLite / native HTTP / `reqall_skill`
+fallback — are intentionally skipped.
 
 ## What this is not
 
@@ -134,35 +138,58 @@ Invoke skills with `/reqall-context`, `/reqall-persist`, and so on.
 | `REQALL_API_KEY` | optional | Fallback Bearer token when not using native MCP OAuth |
 | `REQALL_URL` | `https://www.reqall.net` | Reqall API base (self-host only) |
 | `REQALL_PROJECT_NAME` | auto | Override project id (`org/repo`) |
+| `REQALL_POLL_INTERVAL_MIN` | few minutes | Optional minimum minutes between `poll_subscriptions` calls. When unset, do not spam poll more than once per few minutes |
 
 Project binding order: `REQALL_PROJECT_NAME` → git remote `org/repo` →
-unbound (cross-project search only). Never upsert a project named
-`$HOME`, `ubuntu`, `src`, or `workspace`.
+a labelled `org/repo` in the prompt → reserved
+`.machine/<hostname>/<os-user>` → unbound (cross-project search only).
+Never upsert a project named `$HOME`, `ubuntu`, `src`, `workspace`, or
+a bare cwd basename.
 
 ## Skills
 
 | Skill | Purpose |
 |-------|---------|
-| `reqall-context` | Bind the project, semantic search, list open records, optional impact |
-| `reqall-document` | Persist one meaningful work item |
-| `reqall-persist` | Classify and persist the whole session |
+| `reqall-context` | Bind the project, semantic search, list open records, subscribe/poll, optional impact |
+| `reqall-intend` | Record agreed intent (one spec or arch plus links) before starting work |
+| `reqall-document` | Persist one meaningful work item with inline links |
+| `reqall-persist` | Classify and persist the whole session, reconcile intent, verify writes |
 | `reqall-triage` | Incoming issue intake with priority and duplicate check |
 | `reqall-review` | Interactive review of open records |
 | `reqall-sleep` | Compress memory (consolidate / split / compact / skip / crosslink / promote / discard) |
 
 `reqall-triage`, `reqall-review`, and `reqall-sleep` are user-invoked
-(`disable-model-invocation`). `reqall-context` and `reqall-persist` are
-also driven by `AGENTS.md` on non-trivial work.
+(`disable-model-invocation`). `reqall-context`, `reqall-intend`, and
+`reqall-persist` are also driven by `AGENTS.md` on non-trivial work.
 
 ## MCP operations
 
 The hosted server exposes (host prefixes may vary):
 
 `search`, `upsert_project`, `upsert_record`, `get_record`, `list_records`,
-`upsert_link`, `list_links`, `impact`, `sleep_candidates`, `sleep_apply`.
+`upsert_link`, `list_links`, `impact`, `sleep_candidates`, `sleep_apply`,
+`list_projects`, `list_shares`, `subscribe_project`, `poll_subscriptions`,
+`unsubscribe_project`, `list_subscriptions`.
+
+`upsert_record` accepts inline `links[]` (at most 20). Prefer that over a
+separate `upsert_link` call; check each per-link result (`created` /
+`existing` / `error`) and read back with `list_links`. Never tell the
+user work was persisted if the record write failed or a required link
+errored.
 
 Destructive ops (`delete_record`, `delete_link`, `share_project`,
-`revoke_share`, `delete_project`) only when the user explicitly asks.
+`revoke_share`, `delete_project`, `merge_projects`) only when the user
+explicitly asks. `merge_projects` is irreversible.
+
+### Subscriptions
+
+When a project is bound, `reqall-context` calls `subscribe_project` once
+with a stable `subscriber` label (Grok Bot agent/chat id if known, else a
+session-scoped string reused for the conversation) and
+`poll_subscriptions` on later non-trivial turns. Treat results as
+background context ("Reqall updates since last turn"). Older servers
+without the tools fail open silently. There is no hook — skill and
+`AGENTS.md` policy only.
 
 ## Develop and test
 

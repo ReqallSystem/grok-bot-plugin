@@ -8,6 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const REQUIRED_SKILLS = [
   'reqall-context',
+  'reqall-intend',
   'reqall-persist',
   'reqall-document',
   'reqall-triage',
@@ -15,11 +16,55 @@ const REQUIRED_SKILLS = [
   'reqall-sleep'
 ]
 
-const CONTEXT_OPS = ['upsert_project', 'search', 'list_records', 'get_record', 'list_links', 'impact']
-const PERSIST_OPS = ['upsert_project', 'search', 'list_records', 'upsert_record', 'upsert_link']
-const DOCUMENT_OPS = ['upsert_project', 'search', 'upsert_record', 'upsert_link']
-const TRIAGE_OPS = ['upsert_project', 'search', 'list_records', 'upsert_record', 'upsert_link']
-const REVIEW_OPS = ['upsert_project', 'list_records', 'get_record', 'upsert_record', 'upsert_link']
+const CONTEXT_OPS = [
+  'upsert_project',
+  'search',
+  'list_records',
+  'get_record',
+  'list_links',
+  'impact',
+  'subscribe_project',
+  'poll_subscriptions'
+]
+const INTEND_OPS = [
+  'upsert_project',
+  'search',
+  'get_record',
+  'upsert_record',
+  'upsert_link',
+  'list_links'
+]
+const PERSIST_OPS = [
+  'upsert_project',
+  'search',
+  'list_records',
+  'upsert_record',
+  'upsert_link',
+  'list_links'
+]
+const DOCUMENT_OPS = [
+  'upsert_project',
+  'search',
+  'upsert_record',
+  'upsert_link',
+  'list_links'
+]
+const TRIAGE_OPS = [
+  'upsert_project',
+  'search',
+  'list_records',
+  'upsert_record',
+  'upsert_link',
+  'list_links'
+]
+const REVIEW_OPS = [
+  'upsert_project',
+  'list_records',
+  'get_record',
+  'upsert_record',
+  'upsert_link',
+  'list_links'
+]
 const SLEEP_OPS = ['upsert_project', 'sleep_candidates', 'sleep_apply']
 
 function read(rel) {
@@ -77,6 +122,7 @@ describe('reqall grok-bot plugin package', () => {
   it('skills describe the family MCP operations and Grok Bot limits', () => {
     const expected = {
       'reqall-context': CONTEXT_OPS,
+      'reqall-intend': INTEND_OPS,
       'reqall-persist': PERSIST_OPS,
       'reqall-document': DOCUMENT_OPS,
       'reqall-triage': TRIAGE_OPS,
@@ -102,11 +148,61 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(persist, /record_id/)
     assert.match(persist, /Search, then upsert/)
     assert.match(persist, /instead of creating a second/)
+    assert.match(persist, /Reconcile intent/)
+    assert.match(persist, /--implements-->/)
+    assert.match(persist, /Never tell the user/)
+    assert.match(persist, /never\s+recreate a (saved )?record/i)
+    assert.match(persist, /at most 20/)
 
     const context = read('skills/reqall-context/SKILL.md')
     const linksIdx = context.indexOf('list_links')
     const impactIdx = context.indexOf('call `impact`')
     assert.ok(linksIdx !== -1 && impactIdx !== -1 && linksIdx < impactIdx)
+    assert.match(context, /subscribe_project/)
+    assert.match(context, /poll_subscriptions/)
+    assert.match(context, /REQALL_POLL_INTERVAL_MIN/)
+    assert.match(context, /reqall-intend/)
+
+    const intend = read('skills/reqall-intend/SKILL.md')
+    assert.match(intend, /kind: "spec"/)
+    assert.match(intend, /kind: "arch"/)
+    assert.match(intend, /reqall-persist/)
+    assert.match(intend, /--implements-->/)
+    assert.match(intend, /blocking todo/)
+    assert.match(intend, /at most 20/)
+    assert.match(intend, /never create it twice/)
+    assert.doesNotMatch(intend, /Triggered by the ExitPlanMode/)
+    assert.doesNotMatch(intend, /allowed-tools:/)
+  })
+
+  it('skills share machine binding and the inline-link contract', () => {
+    const linkSkills = [
+      'reqall-intend',
+      'reqall-persist',
+      'reqall-document',
+      'reqall-triage',
+      'reqall-review'
+    ]
+    for (const name of REQUIRED_SKILLS) {
+      const text = read(`skills/${name}/SKILL.md`)
+      assert.match(text, /\.machine\/<hostname>\/<os-user>/)
+      assert.match(text, /cwd basename/)
+    }
+    for (const name of linkSkills) {
+      const text = read(`skills/${name}/SKILL.md`)
+      assert.match(text, /target_table/)
+      assert.match(text, /outgoing/)
+      assert.match(text, /incoming/)
+      assert.match(text, /created/)
+      assert.match(text, /existing/)
+      assert.match(text, /error/)
+      assert.match(text, /list_links/)
+    }
+
+    const sleep = read('skills/reqall-sleep/SKILL.md')
+    assert.match(sleep, /work_review/)
+    assert.match(sleep, /\*\*promote\*\*/)
+    assert.match(sleep, /\*\*discard\*\*/)
   })
 
   it('mcp.json interpolates REQALL_URL and a Bearer placeholder', () => {
@@ -129,6 +225,7 @@ describe('reqall grok-bot plugin package', () => {
   it('Cursor plugin manifest declares the API key variable', () => {
     const manifest = JSON.parse(read('.cursor-plugin/plugin.json'))
     assert.equal(manifest.name, 'reqall')
+    assert.equal(manifest.version, '2026.9.11')
     assert.equal(manifest.license, 'MIT')
     assert.ok(manifest.keywords.includes('grok-bot'))
     assert.doesNotMatch(manifest.description, /Grok Build/)
@@ -152,6 +249,16 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(agents, /call `list_links` and `impact`/)
     assert.match(agents, /call `search` first/)
     assert.match(agents, /record_id/)
+    assert.match(agents, /subscribe_project/)
+    assert.match(agents, /poll_subscriptions/)
+    assert.match(agents, /unsubscribe_project/)
+    assert.match(agents, /list_subscriptions/)
+    assert.match(agents, /list_projects/)
+    assert.match(agents, /list_shares/)
+    assert.match(agents, /merge_projects/)
+    assert.match(agents, /\.machine\/<hostname>\/<os-user>/)
+    assert.match(agents, /reqall-intend/)
+    assert.match(agents, /Never tell the user/)
     assert.doesNotMatch(agents, /Do not try Cursor OAuth/)
     assert.doesNotMatch(agents, /not yet on Reqall|Until Reqall registers|invalid redirect_uri/)
     for (const skill of REQUIRED_SKILLS) {
@@ -166,6 +273,11 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(readme, /REQALL_API_KEY/)
     assert.match(readme, /REQALL_URL/)
     assert.match(readme, /REQALL_PROJECT_NAME/)
+    assert.match(readme, /REQALL_POLL_INTERVAL_MIN/)
+    assert.match(readme, /\.machine\/<hostname>\/<os-user>/)
+    assert.match(readme, /inline `links\[]`/)
+    assert.match(readme, /subscribe_project/)
+    assert.match(readme, /intentionally skipped/)
     assert.match(readme, /https:\/\/www\.reqall\.net\/mcp/)
     assert.match(readme, /Native MCP OAuth is the preferred path/)
     assert.match(readme, /2026-08-28/)

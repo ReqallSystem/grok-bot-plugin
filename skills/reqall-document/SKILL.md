@@ -11,7 +11,8 @@ session.
 
 Grok Bot has no PostToolUse hook. Call this after meaningful work while
 details are fresh. Use Reqall MCP tools `upsert_project`, `search`,
-`upsert_record`, and `upsert_link`. Never persist secrets.
+`upsert_record`, `upsert_link`, `get_record`, and `list_links`. Never
+persist secrets.
 
 ## When to Skip
 
@@ -50,8 +51,10 @@ Prefer durable kinds. `work` is ephemeral (SLEEP promote/discard).
 
 ## Steps
 
-1. **Identify the project** — `REQALL_PROJECT_NAME` or git `org/repo`.
-   Never upsert `ubuntu` / `$HOME` / `src` / `workspace`. Call
+1. **Identify the project** — `REQALL_PROJECT_NAME`, then git
+   `org/repo`, then a labelled `org/repo` in the prompt, then the
+   reserved `.machine/<hostname>/<os-user>` project. Never upsert
+   `$HOME`, `ubuntu`, `src`, `workspace`, or a bare cwd basename. Call
    `upsert_project` → `project_id`.
 
 2. **Evaluate the work** — Decide whether this is worth documenting.
@@ -68,13 +71,45 @@ Prefer durable kinds. `work` is ephemeral (SLEEP promote/discard).
    - A short, descriptive `title` with the appropriate prefix
    - A `body` summarizing what was done and why. Include file paths,
      command output, or other details useful for future semantic search.
+   - `links` (when the tool schema offers it): the relationships from
+     step 5, inline on this same call, so the record and its edges land
+     together.
 
 5. **Upsert links** — If the search in step 3 found related records,
-   call `upsert_link` to connect them:
+   connect them — inline via `links` above, or with `upsert_link` when
+   updating an existing record's links without rewriting the body, or
+   when the host truncates `links[]`:
    - A bug fix `implements` a spec
    - A test `tests` an architecture decision
    - A new task is `related` to or `blocks` an existing record
    - A spec is `parent` of sub-specifications
+   - A `work` record `implements` the spec/arch it is progressing
+     toward (intent recorded by `reqall-intend`), when one exists
 
-6. **Summarize** — Output a one-line summary of what was documented
-   (or "Nothing to document." if skipped).
+6. **Check results** — Confirm the record result succeeded (an `id`
+   returned / no error) and every inline link result is `created` /
+   `existing`. An `error` link means partial persistence: repair with
+   `upsert_link` between the existing records; never recreate the
+   record. Confirm with `list_links` when a result was ambiguous.
+   Never tell the user the item was documented if the record write
+   failed or a required link errored.
+
+7. **Summarize** — Output a one-line summary of what was documented,
+   naming any link that could not be repaired (or "Nothing to document."
+   if skipped). Documenting one item does not reconcile the session:
+   still run `reqall-persist` before the final answer.
+
+## Inline links and verification
+
+Prefer passing `links` on `upsert_record` (at most 20) over a separate
+`upsert_link`-only flow. Each entry names `target_id`, `relationship`,
+and, when it matters, `target_table` (`records` or `projects`) and
+`direction` (`outgoing`: this record → target, the default; `incoming`:
+target → this record).
+
+Check the record result **and every per-link result**: `created` or
+`existing` succeeds; `error`, a missing entry, or a count mismatch is
+partial failure even though the record saved. After writes, call
+`list_links` to confirm intended edges. Repair a missing link with
+`upsert_link` (reverse the endpoints for an incoming link) — never
+recreate a record that already saved.
