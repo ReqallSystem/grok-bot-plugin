@@ -73,8 +73,13 @@ Use Reqall MCP tools `upsert_project`, `search`, `get_record`,
 
 4. **Link** — For each related record found in step 2 (inline via
    `links` where possible, else `upsert_link`):
-   - new spec is a `parent` of, or `related` to, an existing broader
-     spec
+   - when the new intent is a **sub-spec** of an existing broader spec,
+     create an **incoming** `parent` edge from the broader spec → this
+     new record (inline `links[]`: `relationship: "parent"`,
+     `direction: "incoming"`, `target_id` = the broader spec id).
+     Equivalently: broader `--parent-->` narrower. If hierarchy is
+     not clear, use `related` instead of guessing parent. Do not make
+     the narrower record an outgoing `parent` of the broader one.
    - new spec `implements` an existing arch decision
    - existing open issue/todo is `related` to the intent it motivated
    - if the task changes tracked behavior, call `impact` on the
