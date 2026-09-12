@@ -25,6 +25,13 @@ Use the Reqall MCP tools from the connected `reqall` server
 - `impact`
 - `sleep_candidates`
 - `sleep_apply`
+- `list_projects`
+- `list_shares` (alongside share / revoke)
+- `subscribe_project`
+- `poll_subscriptions`
+- `unsubscribe_project`
+- `list_subscriptions` (if the server exposes it)
+- `merge_projects` (only if the user explicitly asks — irreversible)
 - `delete_record` (only if the user explicitly asks)
 - `delete_link` (only if the user explicitly asks)
 - `share_project` / `revoke_share` / `delete_project` (only if the user explicitly asks)
@@ -42,6 +49,7 @@ token into a record, chat log, or repo file.
 Use the bundled skills when available:
 
 - `reqall-context` — initialize the project and gather relevant context
+- `reqall-intend` — record agreed intent (spec or arch) before non-trivial work
 - `reqall-document` — capture one meaningful work item
 - `reqall-persist` — persist all meaningful session outcomes
 - `reqall-triage` — classify and prioritize incoming issues or requests
@@ -52,10 +60,12 @@ The automatic flow below is still mandatory even when skills are not exposed.
 
 ## Project binding
 
-Never `upsert_project` from `$HOME`, `ubuntu`, `src`, or `workspace`.
+Never `upsert_project` from `$HOME`, `ubuntu`, `src`, `workspace`, or a
+bare cwd basename.
 
-Order: `REQALL_PROJECT_NAME` → git remote as `org/repo` → an `org/repo`
-mention in the prompt → **unbound** (cross-project search only).
+Order: `REQALL_PROJECT_NAME` → git remote as `org/repo` → a labelled
+`org/repo` in the prompt → reserved `.machine/<hostname>/<os-user>` →
+**unbound** (cross-project search only).
 
 ## Trigger Policy
 
@@ -85,14 +95,32 @@ steps below) yourself before implementation:
 3. Call `search` using the user task as a conceptual query (not a raw path).
    Pass `project_name` only when bound.
 4. If bound, call `list_records` with `project_id` and `status: "open"`.
-5. If touching a specific file or component, run an additional targeted
+5. If bound and the tools exist, `subscribe_project` once with a stable
+   `subscriber` label (Grok Bot agent/chat id if known, else a
+   session-scoped string reused for this conversation). On later
+   non-trivial turns, `poll_subscriptions` and treat results as
+   background context ("Reqall updates since last turn"). Honor
+   `REQALL_POLL_INTERVAL_MIN` when set; otherwise do not spam poll more
+   than once per few minutes. Fail open silently if the tools are missing.
+6. If touching a specific file or component, run an additional targeted
    conceptual search before editing.
-6. Call `get_record` for top relevant hits when details matter.
-7. If changing existing tracked behavior, call `list_links` and `impact`.
-8. Proceed with implementation using this context.
+7. Call `get_record` for top relevant hits when details matter.
+8. If changing existing tracked behavior, call `list_links` and `impact`.
 
 If Reqall MCP is unavailable, continue the user task and say that automatic
 context could not run.
+
+## Intent
+
+When the user has agreed a non-trivial approach — a plan was accepted,
+or they asked for a specific change that introduces new behavior or a
+structural decision — run `reqall-intend` before the first
+implementation edit. Search first; prefer updating an existing matching
+spec/arch. Skip quietly for chores, typos, Q&A, and chat.
+
+`reqall-persist` later reconciles: fulfilled intent gets a
+`work` / `todo` / `issue` `--implements-->` that record; unfulfilled
+intent gets a blocking todo.
 
 ## Incremental Documentation
 
@@ -111,11 +139,23 @@ hook to block the turn, so you must persist yourself:
    with its `record_id` so you update it instead of creating a duplicate.
    Otherwise create a new record with appropriate `kind`, `status`,
    `title`, and `body`.
-3. Link related records with `upsert_link` when relationships are clear.
-4. If verification was run, persist test/build evidence as `kind: "test"`.
-5. Persist unresolved follow-ups as open records.
-6. Run `list_records` to sanity-check persisted/open items.
-7. In the final response, briefly report what was persisted and any
+3. Prefer passing `links` on `upsert_record` (inline, at most 20) when
+   relationships are clear. Use explicit `relationship`, `direction`,
+   and `target_table` when needed. Keep `upsert_link` only as a fallback
+   when updating an existing record's links without rewriting the body,
+   or when the host truncates `links[]`.
+4. Reconcile recorded intent: fulfilled → outcome `--implements-->`
+   intent; unfulfilled → open todo `--blocks-->` intent.
+5. After each meaningful `upsert_record`, confirm the tool result
+   succeeded (an `id` returned / no error). For intended relationships,
+   confirm via per-link results and `list_links`. Never tell the user
+   "persisted" if the record write failed or a required link errored —
+   report partial failure and retry once when safe. Never recreate a
+   saved record after a link failure.
+6. If verification was run, persist test/build evidence as `kind: "test"`.
+7. Persist unresolved follow-ups as open records.
+8. Run `list_records` to sanity-check persisted/open items.
+9. In the final response, briefly report what was persisted and any
    remaining open follow-ups.
 
 Never rely on the user to remind you to persist.

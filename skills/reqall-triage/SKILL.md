@@ -11,7 +11,8 @@ structured details, check for duplicates, and create a well-formed
 Reqall record with priority.
 
 Use Reqall MCP tools `upsert_project`, `search`, `list_records`,
-`upsert_record`, and `upsert_link`. Never persist secrets.
+`upsert_record`, `upsert_link`, `get_record`, and `list_links`. Never
+persist secrets.
 
 ## Category Table
 
@@ -36,9 +37,11 @@ Use Reqall MCP tools `upsert_project`, `search`, `list_records`,
 ## Steps
 
 1. **Identify the project** -- `REQALL_PROJECT_NAME`, then
-   `git remote get-url origin` as `org/repo`. Never upsert from `$HOME`,
-   `ubuntu`, `src`, or `workspace`. Call `upsert_project` with that exact
-   name to get the `project_id`.
+   `git remote get-url origin` as `org/repo`, then a labelled
+   `org/repo` in the prompt, then the reserved
+   `.machine/<hostname>/<os-user>` project. Never upsert from `$HOME`,
+   `ubuntu`, `src`, `workspace`, or a bare cwd basename. Call
+   `upsert_project` with that exact name to get the `project_id`.
 
 2. **Get the initial description** -- Ask the user to describe their issue
    or request in their own words. If they already provided a description
@@ -114,6 +117,7 @@ Use Reqall MCP tools `upsert_project`, `search`, `list_records`,
    - `status`: `open`
    - `title`: `{PREFIX} {PRIORITY}: {concise title}`
      Example: `BUG: P1: Login fails silently on Safari 18`
+   - `links`: the relationships from step 8, inline
    - `body`: a structured summary including:
      - **Category:** the classification
      - **Priority:** level and justification
@@ -121,8 +125,14 @@ Use Reqall MCP tools `upsert_project`, `search`, `list_records`,
      - **Details:** all gathered structured details
      - **Reporter context:** any relevant user/session context
 
-8. **Create links** -- If step 5 found related (non-duplicate) records,
-   call `upsert_link` for each:
+8. **Link** -- If step 5 found related (non-duplicate) records, pass
+   them as inline `links` on the `upsert_record` call in step 7 (one
+   call creates the record and its edges). Use `upsert_link` only when
+   updating an existing record's links without rewriting the body, or
+   when the host truncates `links[]`. Check every link result:
+   `created` / `existing` succeed; `error` means the record saved but
+   the edge did not -- repair with `upsert_link`, never recreate the
+   record. Confirm with `list_links` when a result was ambiguous.
    - Bug that may be caused by an arch decision: `related`
    - Feature request that extends an existing spec: `related`
    - Bug that blocks a todo: `blocks`
@@ -134,6 +144,22 @@ Use Reqall MCP tools `upsert_project`, `search`, `list_records`,
    - Any duplicates noted
    - Suggested next steps (e.g., "This P1 bug should be investigated
      soon" or "This P4 feature request has been queued")
+   - Any partial link failure separately from verified writes
+
+## Inline links and verification
+
+Prefer passing `links` on `upsert_record` (at most 20) over a separate
+`upsert_link`-only flow. Each entry names `target_id`, `relationship`,
+and, when it matters, `target_table` (`records` or `projects`) and
+`direction` (`outgoing`: this record → target, the default; `incoming`:
+target → this record).
+
+Check the record result **and every per-link result**: `created` or
+`existing` succeeds; `error`, a missing entry, or a count mismatch is
+partial failure even though the record saved. After writes, call
+`list_links` to confirm intended edges. Repair a missing link with
+`upsert_link` (reverse the endpoints for an incoming link) -- never
+recreate a record that already saved.
 
 ## When to Skip
 

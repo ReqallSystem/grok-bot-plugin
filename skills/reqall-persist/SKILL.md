@@ -10,9 +10,9 @@ knowledgebase. Create one record per distinct work item — sessions often
 produce multiple artifacts worth tracking.
 
 Grok Bot has no Stop hook to block the turn. Run this skill yourself
-before the final user-facing answer. Use Reqall MCP tools `upsert_project`,
-`search`, `list_records`, `upsert_record`, and `upsert_link`. Never persist
-secrets.
+before the final user-facing answer. Use Reqall MCP tools
+`upsert_project`, `search`, `list_records`, `get_record`,
+`upsert_record`, `upsert_link`, and `list_links`. Never persist secrets.
 
 ## Classification Table
 
@@ -42,10 +42,13 @@ SLEEP to `promote` or `discard` later.
 
 ## Steps
 
-1. **Identify the project** — `REQALL_PROJECT_NAME`, then git `org/repo`.
-   Never upsert from a generic cwd (`ubuntu`, `$HOME`, `src`, `workspace`).
-   If unbound, search first; only `upsert_project` after you have a real
-   name. Call `upsert_project` with that exact name to get `project_id`.
+1. **Identify the project** — `REQALL_PROJECT_NAME`, then git
+   `org/repo`, then a labelled `org/repo` in the prompt, then the
+   reserved `.machine/<hostname>/<os-user>` project. Never upsert from
+   `$HOME`, `ubuntu`, `src`, `workspace`, or a bare cwd basename. If
+   unbound, search first; only `upsert_project` after you have a real
+   name. Call `upsert_project` with that exact name to get
+   `project_id`.
 
 2. **Analyze the session** — Review the conversation to identify all
    distinct work items. Scan each category explicitly:
@@ -75,9 +78,33 @@ SLEEP to `promote` or `discard` later.
    - A short, descriptive `title` with the appropriate prefix
    - A `body` summarizing what was done, why, and any relevant context.
      Include enough detail for semantic search to find this later.
+   - `links` (when the tool schema offers it): the record's
+     relationships from steps 4 and 5, inline — e.g. the `work` record
+     with `{target_id: <spec>, relationship: "implements"}`, a gap
+     `todo` with `{target_id: <spec>, relationship: "blocks"}`. One
+     call, no separate `upsert_link` to forget.
 
-4. **Create links** — For each meaningful relationship between records
-   (new or existing), call `upsert_link`:
+4. **Reconcile intent** — If `reqall-intend` wrote or selected a
+   spec/arch this session (or you know one was agreed), measure
+   outcomes against it:
+   - Call `get_record` if you need its acceptance criteria. Do not
+     resolve intent whose acceptance criteria are unverified, and never
+     mark a spec resolved as a substitute for the `implements` link.
+   - **Fulfilled** → a `work`, `todo`, or `issue` outcome
+     `--implements-->` the intent (inline `links` on its upsert, or
+     `upsert_link`). Set that outcome `status: "resolved"`. Leave the
+     spec itself `open` unless the user treats specs as tickets to
+     close.
+   - **Partly or not fulfilled** → create a `todo`/`open` naming the
+     gap with an inline link that `blocks` the intent. Keep a session
+     `work` record `active` if one exists.
+   - **Superseded** → update the intent record's body to the approach
+     actually taken, and note the change in the outcome. Do not leave a
+     stale spec behind.
+
+5. **Create links** — For each other meaningful relationship between
+   records: inline via `links` on the record's own upsert, or
+   `upsert_link` between two records that already exist:
    - A bug fix `implements` a spec
    - A test `tests` an architecture decision
    - A new task is `related` to or `blocks` an existing record
@@ -85,13 +112,46 @@ SLEEP to `promote` or `discard` later.
 
    Use `search` to find existing records worth linking to.
 
-5. **Summarize** — Tell the user what was persisted: records
-   created/updated, links established.
+6. **Verify each write** — After every meaningful `upsert_record`,
+   confirm the tool result succeeded (an `id` returned / no error).
+   For intended relationships, confirm via per-link results
+   (`created` / `existing`) and `list_links` readback. An `error` link,
+   a missing entry, or a count mismatch is partial failure even though
+   the record saved. Repair with `upsert_link` once when safe — never
+   recreate a saved record. Retry the record write once when the
+   transport failed and no `id` was returned. Never tell the user
+   "persisted" if the record write failed or a required link errored;
+   report the partial failure.
 
-6. **Verify** — Call `list_records` with the `project_id` to review the
-   records just created or updated. Cross-check against the work items
-   identified in step 2. If anything was missed, search then upsert
-   (update an existing match; do not duplicate).
+7. **Summarize** — Tell the user what was persisted: records
+   created/updated, links established, intent fulfilled or blocked.
+   Separate verified successes from remaining failures.
+
+8. **Sanity-check** — Call `list_records` with the `project_id` to
+   review the records just created or updated. Cross-check against the
+   work items identified in step 2. If anything was missed, search then
+   upsert (update an existing match; do not duplicate).
+
+## Inline links and verification
+
+Prefer passing `links` on `upsert_record` (at most 20) over a separate
+`upsert_link`-only flow. Each entry names `target_id`, `relationship`,
+and, when it matters, `target_table` (`records` or `projects`) and
+`direction` (`outgoing`: this record → target, the default; `incoming`:
+target → this record). Use `implements` for outcome → intent, `tests`
+for evidence → subject, `blocks` for blocker → blocked item, and
+`parent` / `related` only when justified.
+
+Check the record result **and every per-link result**: `created` or
+`existing` succeeds; `error`, a missing entry, or a count mismatch is
+partial failure even though the record saved. After writes, call
+`list_links` to confirm intended edges. Repair a missing link with
+`upsert_link` (reverse the endpoints for an incoming link) — never
+recreate a record that already saved.
+
+Keep `upsert_link` only as a fallback when updating an existing
+record's links without rewriting the body, or when the host truncates
+`links[]`.
 
 ## When to Skip
 
