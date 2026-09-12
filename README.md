@@ -95,6 +95,7 @@ and enable the `reqall` connector from **Customize → MCPs**.
 
 ```bash
 git clone https://github.com/ReqallSystem/grok-bot-plugin.git
+mkdir -p ~/.cursor/plugins/local
 ln -sfn "$PWD/grok-bot-plugin" ~/.cursor/plugins/local/reqall
 ```
 
