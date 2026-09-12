@@ -295,6 +295,11 @@ describe('reqall grok-bot plugin package', () => {
     }
     assert.match(readme, /Do not run `grok plugin marketplace add`/)
     assert.match(readme, /do not[\s\S]*~\/\.grok\/config\.toml/i)
+    assert.match(
+      readme,
+      /mkdir -p ~\/\.cursor\/plugins\/local\nln -sfn "\$PWD\/grok-bot-plugin" ~\/\.cursor\/plugins\/local\/reqall/,
+      'local plugin install must mkdir the parent before ln'
+    )
   })
 
   it('treats native MCP OAuth as working, with API key as fallback', () => {
