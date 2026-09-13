@@ -138,14 +138,24 @@ Invoke skills with `/reqall-context`, `/reqall-persist`, and so on.
 |----------|---------|-------------|
 | `REQALL_API_KEY` | optional | Fallback Bearer token when not using native MCP OAuth |
 | `REQALL_URL` | `https://www.reqall.net` | Reqall API base (self-host only) |
-| `REQALL_PROJECT_NAME` | auto | Override project id (`org/repo`) |
+| `REQALL_PROJECT_NAME` | auto | Explicit project name (preserved verbatim) |
+| `REQALL_MACHINE_NAME` | hostname | Optional whole-segment override for `.machine/<name>/<os-user>` |
+| `REQALL_WORKSPACE_ROOT` | auto | Optional workspace root for cwd-relative fallback |
 | `REQALL_POLL_INTERVAL_MIN` | few minutes | Optional minimum minutes between `poll_subscriptions` calls. When unset, do not spam poll more than once per few minutes |
 
-Project binding order: `REQALL_PROJECT_NAME` → git remote `org/repo` →
-a labelled `org/repo` in the prompt → reserved
-`.machine/<hostname>/<os-user>` → unbound (cross-project search only).
-Never upsert a project named `$HOME`, `ubuntu`, `src`, `workspace`, or
-a bare cwd basename.
+Reuse a host-bound project throughout recall and persistence; explicit
+operation arguments (including SLEEP) remain authoritative. Otherwise
+use `REQALL_PROJECT_NAME` / existing host setting → network Git origin →
+explicitly labelled `project_name` or `project` → nearest `.reqall.yml` /
+`.reqall.yaml` → nearest `package.json` / `go.mod` / `Cargo.toml` →
+exact path relative to a known workspace →
+`.machine/<short-lower-hostname>/<os-user>`. Preserve explicit
+identifiers; never guess from a basename or an unlabelled slash token.
+Route account-wide preferences deliberately to `.user`.
+
+The installed instruction assets embed the full offline policy, including
+metadata limits and Git compatibility. Canonical reference:
+https://github.com/ReqallSystem/plugins/blob/main/doc/PROJECT_NAMING.md
 
 ## Skills
 
@@ -201,7 +211,8 @@ npm test
 ```
 
 Tests check the required skill set and frontmatter, MCP URL and Bearer
-placeholder, plugin variables, `AGENTS.md` policy, README substance, and
+placeholder, plugin variables, `AGENTS.md` policy, README substance,
+that instruction assets embed the shared project-naming policy, and
 that the tree contains no hook runtime or committed secrets.
 
 ## License

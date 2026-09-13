@@ -185,7 +185,7 @@ describe('reqall grok-bot plugin package', () => {
     ]
     for (const name of REQUIRED_SKILLS) {
       const text = read(`skills/${name}/SKILL.md`)
-      assert.match(text, /\.machine\/<hostname>\/<os-user>/)
+      assert.match(text, /\.machine\/<short-lower-hostname>\/<os-user>/)
       assert.match(text, /cwd basename/)
     }
     for (const name of linkSkills) {
@@ -256,7 +256,7 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(agents, /list_projects/)
     assert.match(agents, /list_shares/)
     assert.match(agents, /merge_projects/)
-    assert.match(agents, /\.machine\/<hostname>\/<os-user>/)
+    assert.match(agents, /\.machine\/<short-lower-hostname>\/<os-user>/)
     assert.match(agents, /reqall-intend/)
     assert.match(agents, /Never tell the user/)
     assert.doesNotMatch(agents, /Do not try Cursor OAuth/)
@@ -274,7 +274,7 @@ describe('reqall grok-bot plugin package', () => {
     assert.match(readme, /REQALL_URL/)
     assert.match(readme, /REQALL_PROJECT_NAME/)
     assert.match(readme, /REQALL_POLL_INTERVAL_MIN/)
-    assert.match(readme, /\.machine\/<hostname>\/<os-user>/)
+    assert.match(readme, /\.machine\/<short-lower-hostname>\/<os-user>/)
     assert.match(readme, /inline `links\[]`/)
     assert.match(readme, /subscribe_project/)
     assert.match(readme, /intentionally skipped/)
