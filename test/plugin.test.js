@@ -225,7 +225,7 @@ describe('reqall grok-bot plugin package', () => {
   it('Cursor plugin manifest declares the API key variable', () => {
     const manifest = JSON.parse(read('.cursor-plugin/plugin.json'))
     assert.equal(manifest.name, 'reqall')
-    assert.equal(manifest.version, '2026.9.11')
+    assert.equal(manifest.version, JSON.parse(read('package.json')).version)
     assert.equal(manifest.license, 'MIT')
     assert.ok(manifest.keywords.includes('grok-bot'))
     assert.doesNotMatch(manifest.description, /Grok Build/)
