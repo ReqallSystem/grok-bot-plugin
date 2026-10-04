@@ -330,6 +330,15 @@ describe('reqall grok-bot plugin package', () => {
     assert.ok(!JSON.stringify(pkg).includes('grok-build'))
   })
 
+  it('lists every test file explicitly in npm test', () => {
+    // cmd.exe does not expand globs in npm scripts, so the files are named one by one.
+    const script = JSON.parse(read('package.json')).scripts.test
+    assert.doesNotMatch(script, /\*/)
+    for (const file of readdirSync(join(root, 'test')).filter(name => name.endsWith('.test.js'))) {
+      assert.ok(script.includes(`test/${file}`), `npm test skips test/${file}`)
+    }
+  })
+
   it('keeps the MIT license and does not commit secrets', () => {
     const license = read('LICENSE')
     assert.match(license, /MIT License/)

@@ -143,7 +143,8 @@ the filesystem root when no containing workspace boundary is known.
 
 Automatic names use ASCII letters/digits, `_`, `-`, and `.` within slash-separated
 segments. Reject absolute POSIX, drive, UNC, backslash, tilde, empty, `.` and `..`
-segments before normalization. Never strip a leading slash to make a path appear
+segments before normalization. A value outside this grammar is skipped, never
+rewritten into a valid name; discovery continues with the next source. Never strip a leading slash to make a path appear
 portable. Explicit metadata named `src` or `work` is valid; a directory-noise
 blacklist must not override intentional metadata.
 

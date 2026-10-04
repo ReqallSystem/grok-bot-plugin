@@ -29,7 +29,7 @@
     "url": "https://github.com/ReqallSystem/grok-bot-plugin.git"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/naming.test.js test/plugin.test.js"
   },
   "license": "MIT"
 }
