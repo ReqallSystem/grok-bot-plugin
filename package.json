@@ -1,6 +1,6 @@
 {
   "name": "@reqall/grok-bot-plugin",
-  "version": "2026.9.17",
+  "version": "2026.10.4",
   "description": "Reqall plugin for Grok Bot — portable skills, MCP connector, and memory autopilot",
   "type": "module",
   "engines": {
