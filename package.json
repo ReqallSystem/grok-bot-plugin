@@ -1,6 +1,6 @@
 {
   "name": "@reqall/grok-bot-plugin",
-  "version": "2026.9.17",
+  "version": "2026.10.4",
   "description": "Reqall plugin for Grok Bot — portable skills, MCP connector, and memory autopilot",
   "type": "module",
   "engines": {
@@ -29,7 +29,7 @@
     "url": "https://github.com/ReqallSystem/grok-bot-plugin.git"
   },
   "scripts": {
-    "test": "node --test test/plugin.test.js"
+    "test": "node --test test/naming.test.js test/plugin.test.js"
   },
   "license": "MIT"
 }
